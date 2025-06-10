@@ -5,8 +5,11 @@ import { getMessages, getUsersForSidebar, sendMessage } from "../controllers/mes
 const router = express.Router();
 
 router.get("/users", protectRoute, getUsersForSidebar);
-router.get("/:id", protectRoute, getMessages);
 
-router.post("/send/:id", protectRoute, sendMessage);
+// Updated routes for getting messages:
+router.get("/direct/:userId", protectRoute, getMessages); // For direct messages
+router.get("/team/:teamId", protectRoute, getMessages);   // For team messages
+
+router.post("/send/:chatId", protectRoute, sendMessage); // :chatId can be userId or teamId
 
 export default router;
