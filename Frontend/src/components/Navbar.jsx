@@ -1,6 +1,6 @@
 import { Link } from "react-router-dom";
 import { useAuthStore } from "../store/useAuthStore";
-import { AudioWaveform, LogOut,  Settings, User } from "lucide-react";
+import { AudioWaveform, LogOut,  Settings, User, Users } from "lucide-react"; // Added Users
 
 const Navbar = () => {
   const { logout, authUser } = useAuthStore();
@@ -22,6 +22,15 @@ const Navbar = () => {
           </div>
 
           <div className="flex items-center gap-2">
+            {authUser && ( // Teams link only if authenticated
+              <Link
+                to="/teams"
+                className="btn btn-sm gap-2 transition-colors"
+              >
+                <Users className="w-4 h-4" />
+                <span className="hidden sm:inline">Teams</span>
+              </Link>
+            )}
             <Link
               to={"/settings"}
               className={`
