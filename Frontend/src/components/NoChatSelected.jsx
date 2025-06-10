@@ -1,27 +1,15 @@
-import { AudioWaveform } from "lucide-react";
+// Frontend/src/components/NoChatSelected.jsx
+import { MessagesSquare } from "lucide-react";
 
-const NoChatSelected = () => {
+const NoChatSelected = ({ message }) => {
   return (
-    <div className="w-full flex flex-1 flex-col items-center justify-center p-16 bg-base-100/50">
-      <div className="max-w-md text-center space-y-6">
-        {/* Icon Display */}
-        <div className="flex justify-center gap-4 mb-4">
-          <div className="relative">
-            <div
-              className="w-16 h-16 rounded-2xl bg-primary/10 flex items-center
-             justify-center animate-bounce"
-            >
-              <AudioWaveform className="w-8 h-8 text-primary " />
-            </div>
-          </div>
-        </div>
-
-        {/* Welcome Text */}
-        <h2 className="text-2xl font-bold">Welcome to Wave!</h2>
-        <p className="text-base-content/60">
-          Select a conversation from the sidebar to start chatting
-        </p>
-      </div>
+    <div className="flex-1 flex flex-col items-center justify-center p-10 text-center">
+      <MessagesSquare size={80} className="text-zinc-400 mb-6" />
+      <h2 className="text-2xl font-semibold text-zinc-300 mb-2">Welcome!</h2>
+      <p className="text-zinc-400">
+        {message || "Select a conversation from the sidebar to start messaging."}
+      </p>
+      {/* Optionally, if no team, guide to team creation/join page */}
     </div>
   );
 };

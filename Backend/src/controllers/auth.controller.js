@@ -37,6 +37,7 @@ export const signup = async (req, res) => {
         fullName: newUser.fullName,
         email: newUser.email,
         profilePic: newUser.profilePic,
+        team: newUser.team, // Explicitly include team (will be null)
       });
     } else {
       res.status(400).json({ message: "Invalid user data" });
@@ -50,7 +51,7 @@ export const signup = async (req, res) => {
 export const login = async (req, res) => {
   const { email, password } = req.body;
   try {
-    const user = await User.findOne({ email });
+    const user = await User.findOne({ email }).populate("team"); // New: populate team
 
     if (!user) {
       return res.status(400).json({ message: "Invalid credentials" });
@@ -68,6 +69,7 @@ export const login = async (req, res) => {
       fullName: user.fullName,
       email: user.email,
       profilePic: user.profilePic,
+      team: user.team, // This will be the populated team object or null
     });
   } catch (error) {
     console.log("Error in login controller", error.message);
