@@ -29,7 +29,25 @@ export const createTeam = async (req, res) => {
 
     await newTeam.save();
 
-    await User.findByIdAndUpdate(ownerId, { team: newTeam._id });
+    let updatedUser;
+    try {
+      updatedUser = await User.findByIdAndUpdate(ownerId, { team: newTeam._id }, { new: true });
+      if (!updatedUser || updatedUser.team?.toString() !== newTeam._id.toString()) {
+        console.error(`Failed to update user ${ownerId} with team ${newTeam._id}. User's team is now ${updatedUser?.team}`);
+        await Team.findByIdAndDelete(newTeam._id);
+        return res.status(500).json({ message: "Failed to update user with new team information. Team creation rolled back." });
+      }
+    } catch (error) {
+      console.error(`Error updating user ${ownerId} with team ${newTeam._id}:`, error.message);
+      try {
+        await Team.findByIdAndDelete(newTeam._id);
+        console.log(`Successfully deleted team ${newTeam._id} after failed user update.`);
+      } catch (deleteError) {
+        console.error(`Failed to delete team ${newTeam._id} after failed user update:`, deleteError.message);
+      }
+      // Rethrow the original error to be caught by the outer catch block
+      throw error;
+    }
 
     res.status(201).json({
       _id: newTeam._id,
@@ -66,16 +84,40 @@ export const joinTeam = async (req, res) => {
     }
 
     if (teamToJoin.members.includes(userId)) {
-      await User.findByIdAndUpdate(userId, { team: teamToJoin._id });
+      await User.findByIdAndUpdate(userId, { team: teamToJoin._id }); // Ensure user's team field is updated
       return res.status(200).json(teamToJoin);
     }
 
-    teamToJoin.members.push(userId);
-    await teamToJoin.save();
+    // Path B: User is not yet a member, add them to the team.
+    const updatedTeam = await Team.findByIdAndUpdate(teamToJoin._id, { $addToSet: { members: userId } }, { new: true });
 
-    await User.findByIdAndUpdate(userId, { team: teamToJoin._id });
+    if (!updatedTeam) {
+      // This case should be rare if teamToJoin was just fetched, but good for robustness
+      return res.status(404).json({ message: "Team not found during update operation." });
+    }
 
-    res.status(200).json(teamToJoin);
+    let updatedUser;
+    try {
+      updatedUser = await User.findByIdAndUpdate(userId, { team: updatedTeam._id }, { new: true });
+      if (!updatedUser || updatedUser.team?.toString() !== updatedTeam._id.toString()) {
+        console.error(`Failed to update user ${userId} with team ${updatedTeam._id}. User's team is now ${updatedUser?.team}`);
+        // Rollback: remove user from team members
+        await Team.findByIdAndUpdate(updatedTeam._id, { $pull: { members: userId } });
+        return res.status(500).json({ message: "Failed to update user with new team. Join team operation rolled back." });
+      }
+    } catch (error) {
+      console.error(`Error updating user ${userId} with team ${updatedTeam._id}:`, error.message);
+      // Rollback: remove user from team members
+      try {
+        await Team.findByIdAndUpdate(updatedTeam._id, { $pull: { members: userId } });
+        console.log(`Successfully removed user ${userId} from team ${updatedTeam._id} after failed user update.`);
+      } catch (rollbackError) {
+        console.error(`Failed to rollback user ${userId} from team ${updatedTeam._id}:`, rollbackError.message);
+      }
+      throw error; // Rethrow original error
+    }
+
+    res.status(200).json(updatedTeam);
 
   } catch (error) {
     console.error("Error in joinTeam controller:", error.message);
